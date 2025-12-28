@@ -1,0 +1,45 @@
+name: Release Extended Schema
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Schema
+        run: npm start
+
+      - name: Validate Schema
+        run: |
+          npx ts-node src/deep-validate.ts
+          npx ts-node src/validate-completeness.ts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: extended-schema.json
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
